@@ -13,17 +13,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List available Xcode
+      - name: Select Xcode 26.0.1
         run: |
-          echo "=== /Applications 下的 Xcode ==="
-          ls -d /Applications/Xcode*.app 2>/dev/null || echo "无"
-          echo ""
-          echo "=== 各版本详情 ==="
-          for x in /Applications/Xcode*.app; do
-            echo "$x -> $(/usr/bin/defaults read "$x/Contents/Info" CFBundleShortVersionString 2>/dev/null)"
-          done
-          echo ""
-          echo "=== 当前选中 ==="
+          sudo xcode-select -s /Applications/Xcode_26.0.1.app
+          sudo xcodebuild -runFirstLaunch || true
           xcode-select -p
           xcodebuild -version
 
@@ -35,32 +28,20 @@ jobs:
       - name: Install iOS workload
         run: dotnet workload install ios
 
-      - name: Create ad-hoc signing identity
-        run: |
-          # 生成一个本地自签证书，骗过签名检查
-          security create-keychain -p "" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "" build.keychain
-          security set-keychain-settings -lut 3600 build.keychain
-
-          # 用 ad-hoc 方式，不依赖真实证书
-          defaults write com.apple.dt.Xcode IDEProvisioningProfilesDisabled -bool YES
-
       - name: Restore
         run: dotnet restore AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj
 
-      - name: Build (ad-hoc, no provisioning)
+      - name: Build (no ipa)
         run: |
           dotnet publish AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj \
             -c Release \
             -f net10.0-ios \
             -r ios-arm64 \
             /p:BuildIpa=false \
-            /p:CodesignKey="iPhone Developer" \
+            /p:EnableCodeSigning=false \
+            /p:CodesignKey="" \
             /p:CodesignProvision="" \
             /p:CodesignEntitlements="" \
-            /p:EnableCodeSigning=false \
-            /p:BuildForSimulator=false \
             -o out
 
       - name: Find app bundle
@@ -73,7 +54,6 @@ jobs:
           if [ -n "$APP" ]; then
             zip -r ../app-payload.zip "$APP"
           else
-            echo "No .app found, zipping everything"
             zip -r ../app-payload.zip .
           fi
           cd ..
