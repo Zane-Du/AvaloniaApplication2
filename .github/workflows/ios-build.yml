@@ -20,6 +20,13 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
+      - name: Install iOS 26.0 platform
+        run: |
+          sudo xcodebuild -downloadPlatform iOS -version 26.0 || \
+          sudo xcodebuild -downloadPlatform iOS || true
+          echo "=== 已安装的平台 ==="
+          ls /Applications/Xcode_26.0.1.app/Contents/Developer/Platforms/
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
