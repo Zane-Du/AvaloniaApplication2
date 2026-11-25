@@ -29,20 +29,25 @@ jobs:
       - name: Restore
         run: dotnet restore AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj
 
-      - name: Build (unsigned ipa)
+      - name: Build (no signing)
         run: |
           dotnet publish AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj \
             -c Release \
             -f net10.0-ios \
             -r ios-arm64 \
-            /p:BuildIpa=true \
+            /p:CodesigningAllowed=false \
+            /p:BuildIpa=false \
             -o out
 
-      - name: Find ipa
-        run: find out -name "*.ipa"
+      - name: Pack app bundle into zip
+        run: |
+          cd out
+          APP=$(find . -name "*.app" -maxdepth 1 | head -1)
+          zip -r ../app-payload.zip "$APP"
+          cd ..
 
-      - name: Upload ipa
+      - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
-          name: ios-unsigned-ipa
-          path: out/**/*.ipa
+          name: ios-app-bundle
+          path: app-payload.zip
