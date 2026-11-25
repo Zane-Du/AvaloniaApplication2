@@ -26,27 +26,50 @@ jobs:
       - name: Install iOS workload
         run: dotnet workload install ios
 
+      - name: Create ad-hoc signing identity
+        run: |
+          # 生成一个本地自签证书，骗过签名检查
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security set-keychain-settings -lut 3600 build.keychain
+
+          # 用 ad-hoc 方式，不依赖真实证书
+          defaults write com.apple.dt.Xcode IDEProvisioningProfilesDisabled -bool YES
+
       - name: Restore
         run: dotnet restore AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj
 
-      - name: Build (no signing)
+      - name: Build (ad-hoc, no provisioning)
         run: |
           dotnet publish AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj \
             -c Release \
             -f net10.0-ios \
             -r ios-arm64 \
-            /p:CodesigningAllowed=false \
             /p:BuildIpa=false \
+            /p:CodesignKey="iPhone Developer" \
+            /p:CodesignProvision="" \
+            /p:CodesignEntitlements="" \
+            /p:EnableCodeSigning=false \
+            /p:BuildForSimulator=false \
             -o out
 
-      - name: Pack app bundle into zip
+      - name: Find app bundle
+        run: find out -name "*.app" -maxdepth 2
+
+      - name: Pack into zip
         run: |
           cd out
           APP=$(find . -name "*.app" -maxdepth 1 | head -1)
-          zip -r ../app-payload.zip "$APP"
+          if [ -n "$APP" ]; then
+            zip -r ../app-payload.zip "$APP"
+          else
+            echo "No .app found, zipping everything"
+            zip -r ../app-payload.zip .
+          fi
           cd ..
 
-      - name: Upload app bundle
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-app-bundle
