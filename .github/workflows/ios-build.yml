@@ -22,11 +22,11 @@ jobs:
         run: dotnet workload install ios
 
       - name: Restore
-        run: dotnet restore AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj
+        run: dotnet restore AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj
 
       - name: Build (unsigned ipa)
         run: |
-          dotnet publish AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj \
+          dotnet publish AvaloniaApplication2/AvaloniaApplication2.iOS/AvaloniaApplication2.iOS.csproj \
             -c Release \
             -f net10.0-ios \
             -r ios-arm64 \
