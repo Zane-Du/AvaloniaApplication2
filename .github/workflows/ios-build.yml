@@ -13,9 +13,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 26.0
+      - name: List available Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.0.app
+          echo "=== /Applications 下的 Xcode ==="
+          ls -d /Applications/Xcode*.app 2>/dev/null || echo "无"
+          echo ""
+          echo "=== 各版本详情 ==="
+          for x in /Applications/Xcode*.app; do
+            echo "$x -> $(/usr/bin/defaults read "$x/Contents/Info" CFBundleShortVersionString 2>/dev/null)"
+          done
+          echo ""
+          echo "=== 当前选中 ==="
+          xcode-select -p
           xcodebuild -version
 
       - name: Setup .NET
